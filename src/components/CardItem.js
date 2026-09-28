@@ -1,40 +1,70 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { TouchableOpacity, Image, Text, View, StyleSheet } from 'react-native';
 
 export default function CardItem({ card, onPress }) {
-  const imageUrl = card.card_images?.[0]?.image_url_small;
+  // Retorna a cor da borda com base no tipo da carta de Yu-Gi-Oh!
+  const getBorderColor = (type = '') => {
+    const lowerType = type.toLowerCase();
+    if (lowerType.includes('spell')) return '#059669'; // Mágica (Verde)
+    if (lowerType.includes('trap')) return '#be185d';  // Armadilha (Rosa)
+    if (lowerType.includes('fusion')) return '#7c3aed'; // Fusão (Roxo)
+    if (lowerType.includes('effect')) return '#ea580c'; // Monstro de Efeito (Laranja)
+    return '#d97706'; // Monstro Normal (Dourado)
+  };
+
+  const borderColor = getBorderColor(card?.type);
+  const imageUrl = card?.card_images?.[0]?.image_url || card?.card_images?.[0]?.image_url_small;
 
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
+      style={styles.cardWrapper}
       onPress={onPress}
-      style={{
-        backgroundColor: '#1e293b',
-        borderRadius: 10,
-        padding: 8,
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: '#334155',
-        shadowColor: '#000',
-        shadowOpacity: 0.3,
-        shadowRadius: 4
-      }}
+      activeOpacity={0.8}
     >
-      {imageUrl ? (
-        <Image 
-          source={{ uri: imageUrl }} 
-          style={{ width: '100%', height: 160, borderRadius: 4 }}
+      <View style={[styles.cardContainer, { borderColor }]}>
+        <Image
+          source={{ uri: imageUrl }}
+          style={styles.cardImage}
           resizeMode="contain"
         />
-      ) : (
-        <View style={{ width: '100%', height: 160, backgroundColor: '#334155', borderRadius: 4 }} />
-      )}
-
-      <Text 
-        style={{ color: '#f8fafc', fontWeight: 'bold', fontSize: 11, marginTop: 6, textAlign: 'center' }} 
-        numberOfLines={1}
-      >
-        {card.name}
-      </Text>
+        <Text style={styles.cardTitle} numberOfLines={1} ellipsisMode="tail">
+          {card?.name}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  cardWrapper: {
+    flex: 1,
+    maxWidth: '100%',
+  },
+  cardContainer: {
+    backgroundColor: '#1e293b',
+    borderRadius: 8,
+    padding: 6,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  cardImage: {
+    width: '100%',
+    aspectRatio: 0.7, // Garante a proporção retangular original das cartas de Yu-Gi-Oh!
+    borderRadius: 4,
+    backgroundColor: '#0f172a',
+  },
+  cardTitle: {
+    color: '#f8fafc',
+    fontSize: 11,
+    fontWeight: 'bold',
+    marginTop: 6,
+    textAlign: 'center',
+    width: '100%',
+  },
+});
