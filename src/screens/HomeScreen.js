@@ -21,69 +21,25 @@ export default function HomeScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Estados dos Filtros
-  const [selectedType, setSelectedType] = useState('all');
+  // Estados dos Filtros Mantidos
   const [selectedRace, setSelectedRace] = useState('all');
   const [selectedAttribute, setSelectedAttribute] = useState('all');
   const [selectedLevel, setSelectedLevel] = useState('all');
 
-  // Estados dos Modais
-  const [modalTypeVisible, setModalTypeVisible] = useState(false);
+  // Modais dos Filtros
   const [modalRaceVisible, setModalRaceVisible] = useState(false);
   const [modalAttrVisible, setModalAttrVisible] = useState(false);
   const [modalLevelVisible, setModalLevelVisible] = useState(false);
 
-  // Layout Responsivo: 2 colunas no telemóvel até 6 em ecrãs grandes
+  // Responsividade da grade de cartas
   const numColumns = width < 500 ? 2 : width < 768 ? 3 : width < 1024 ? 4 : 6;
 
-  // Lista Completa de Tipos de Yu-Gi-Oh!
-  const cardTypes = [
-    'all',
-    'Normal Monster',
-    'Effect Monster',
-    'Flip Effect Monster',
-    'Fusion Monster',
-    'Ritual Monster',
-    'Synchro Monster',
-    'XYZ Monster',
-    'Pendulum Effect Monster',
-    'Link Monster',
-    'Spell Card',
-    'Trap Card',
-  ];
-
-  // Lista Completa de Raças / Subtipos
   const cardRaces = [
-    'all',
-    'Dragon',
-    'Spellcaster',
-    'Warrior',
-    'Fiend',
-    'Zombie',
-    'Machine',
-    'Aqua',
-    'Pyro',
-    'Rock',
-    'Winged Beast',
-    'Plant',
-    'Insect',
-    'Thunder',
-    'Beast',
-    'Beast-Warrior',
-    'Dinosaur',
-    'Reptile',
-    'Cyberse',
-    'Sea Serpent',
-    'Psychic',
-    'Wyrm',
-    'Divine-Beast',
-    'Normal',
-    'Continuous',
-    'Equip',
-    'Quick-Play',
-    'Field',
-    'Ritual',
-    'Counter',
+    'all', 'Dragon', 'Spellcaster', 'Warrior', 'Fiend', 'Zombie', 'Machine',
+    'Aqua', 'Pyro', 'Rock', 'Winged Beast', 'Plant', 'Insect', 'Thunder',
+    'Beast', 'Beast-Warrior', 'Dinosaur', 'Reptile', 'Cyberse', 'Sea Serpent',
+    'Psychic', 'Wyrm', 'Divine-Beast', 'Normal', 'Continuous', 'Equip',
+    'Quick-Play', 'Field', 'Ritual', 'Counter',
   ];
 
   useEffect(() => {
@@ -91,13 +47,12 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
-    applyFilters(searchQuery, selectedType, selectedRace, selectedAttribute, selectedLevel);
-  }, [searchQuery, selectedType, selectedRace, selectedAttribute, selectedLevel, cards]);
+    applyFilters(searchQuery, selectedRace, selectedAttribute, selectedLevel);
+  }, [searchQuery, selectedRace, selectedAttribute, selectedLevel, cards]);
 
   const fetchCards = async () => {
     try {
       setLoading(true);
-      // Procura TODAS as cartas da base de dados sem restrição de quantidade
       const response = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php');
       const data = await response.json();
       if (data && data.data) {
@@ -111,7 +66,7 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  const applyFilters = (query, type, race, attribute, level) => {
+  const applyFilters = (query, race, attribute, level) => {
     let result = cards;
 
     // 1. Pesquisa por Nome ou ID
@@ -123,32 +78,19 @@ export default function HomeScreen({ navigation }) {
       );
     }
 
-    // 2. Filtro por Tipo Principal
-    if (type !== 'all') {
-      result = result.filter(
-        (card) => card.type?.toLowerCase() === type.toLowerCase()
-      );
-    }
-
-    // 3. Filtro por Raça / Subtipo
+    // 2. Filtro por Raça / Subtipo
     if (race !== 'all') {
-      result = result.filter(
-        (card) => card.race?.toLowerCase() === race.toLowerCase()
-      );
+      result = result.filter((card) => card.race?.toLowerCase() === race.toLowerCase());
     }
 
-    // 4. Filtro por Atributo
+    // 3. Filtro por Atributo
     if (attribute !== 'all') {
-      result = result.filter(
-        (card) => card.attribute?.toUpperCase() === attribute.toUpperCase()
-      );
+      result = result.filter((card) => card.attribute?.toUpperCase() === attribute.toUpperCase());
     }
 
-    // 5. Filtro por Estrelas / Nível / Rank
+    // 4. Filtro por Estrelas / Nível
     if (level !== 'all') {
-      result = result.filter(
-        (card) => card.level === parseInt(level) || card.rank === parseInt(level)
-      );
+      result = result.filter((card) => card.level === parseInt(level) || card.rank === parseInt(level));
     }
 
     setFilteredCards(result);
@@ -156,14 +98,12 @@ export default function HomeScreen({ navigation }) {
 
   const resetFilters = () => {
     setSearchQuery('');
-    setSelectedType('all');
     setSelectedRace('all');
     setSelectedAttribute('all');
     setSelectedLevel('all');
   };
 
   const isFilterActive =
-    selectedType !== 'all' ||
     selectedRace !== 'all' ||
     selectedAttribute !== 'all' ||
     selectedLevel !== 'all' ||
@@ -172,7 +112,6 @@ export default function HomeScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Título do App */}
         <Text style={styles.title}>YuG!Dek</Text>
 
         {/* Campo de Pesquisa */}
@@ -186,18 +125,13 @@ export default function HomeScreen({ navigation }) {
           />
         </View>
 
-        {/* Barra de Filtros Principais */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>
-          <View style={styles.filterContainer}>
-            <TouchableOpacity
-              style={[styles.filterButton, selectedType !== 'all' && styles.filterButtonActive]}
-              onPress={() => setModalTypeVisible(true)}
-            >
-              <Text style={styles.filterButtonText}>
-                🐍 {selectedType === 'all' ? 'Tipos' : selectedType}
-              </Text>
-            </TouchableOpacity>
-
+        {/* Barra de Filtros (Sem o filtro de Tipos) */}
+        <View style={styles.filterWrapper}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterContainer}
+          >
             <TouchableOpacity
               style={[styles.filterButton, selectedRace !== 'all' && styles.filterButtonActive]}
               onPress={() => setModalRaceVisible(true)}
@@ -224,26 +158,25 @@ export default function HomeScreen({ navigation }) {
                 ⭐ {selectedLevel === 'all' ? 'Estrelas' : `${selectedLevel} ★`}
               </Text>
             </TouchableOpacity>
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </View>
 
-        {/* Botão de Limpar Filtros */}
+        {/* Botão para Limpar Filtros */}
         {isFilterActive && (
           <TouchableOpacity style={styles.resetButton} onPress={resetFilters}>
             <Text style={styles.resetButtonText}>Limpar Filtros ✕</Text>
           </TouchableOpacity>
         )}
 
-        {/* Contador de Cartas Disponíveis */}
         <Text style={styles.counterText}>
           Exibindo {filteredCards.length} de {cards.length} cartas liberadas
         </Text>
 
-        {/* Lista de Cartas ou Indicador de Carregamento */}
+        {/* Lista Principal de Cartas */}
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#f59e0b" />
-            <Text style={styles.loadingText}>A carregar baralho completo (14.000+ cartas)...</Text>
+            <Text style={styles.loadingText}>A carregar baralho...</Text>
           </View>
         ) : (
           <FlatList
@@ -262,42 +195,11 @@ export default function HomeScreen({ navigation }) {
           />
         )}
 
-        {/* Modal: Tipos */}
-        <Modal visible={modalTypeVisible} transparent animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Filtrar por Tipo</Text>
-              <ScrollView style={{ maxHeight: 300 }}>
-                {cardTypes.map((t) => (
-                  <TouchableOpacity
-                    key={t}
-                    style={styles.modalOption}
-                    onPress={() => {
-                      setSelectedType(t);
-                      setModalTypeVisible(false);
-                    }}
-                  >
-                    <Text style={styles.modalOptionText}>
-                      {t === 'all' ? 'Todos os Tipos' : t}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setModalTypeVisible(false)}
-              >
-                <Text style={styles.modalCloseText}>Fechar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Modal: Raças / Subtipos */}
+        {/* Modal: Raças */}
         <Modal visible={modalRaceVisible} transparent animationType="fade">
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Filtrar por Raça / Subtipo</Text>
+              <Text style={styles.modalTitle}>Filtrar por Raça</Text>
               <ScrollView style={{ maxHeight: 300 }}>
                 {cardRaces.map((r) => (
                   <TouchableOpacity
@@ -359,7 +261,7 @@ export default function HomeScreen({ navigation }) {
         <Modal visible={modalLevelVisible} transparent animationType="fade">
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Filtrar por Nível / Estrelas</Text>
+              <Text style={styles.modalTitle}>Filtrar por Estrelas</Text>
               <ScrollView style={{ maxHeight: 300 }}>
                 {['all', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map((lvl) => (
                   <TouchableOpacity
@@ -405,8 +307,8 @@ const styles = StyleSheet.create({
     color: '#f8fafc',
     fontSize: 14,
   },
-  filterScrollView: { maxHeight: 44, marginBottom: 8 },
-  filterContainer: { flexDirection: 'row', gap: 8 },
+  filterWrapper: { height: 44, marginBottom: 10 },
+  filterContainer: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   filterButton: {
     backgroundColor: '#1e293b',
     borderWidth: 1,
@@ -426,7 +328,6 @@ const styles = StyleSheet.create({
   listContent: { paddingBottom: 24 },
   row: { justifyContent: 'space-between', gap: 10, marginBottom: 12 },
 
-  /* Estilos dos Modais */
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.75)',
