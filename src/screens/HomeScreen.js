@@ -28,11 +28,12 @@ export default function HomeScreen({ navigation }) {
   const [selectedAttribute, setSelectedAttribute] = useState('all');
   const [selectedLevel, setSelectedLevel] = useState('all');
 
-  // Modais
+  // Modais dos Filtros
   const [modalRaceVisible, setModalRaceVisible] = useState(false);
   const [modalAttrVisible, setModalAttrVisible] = useState(false);
   const [modalLevelVisible, setModalLevelVisible] = useState(false);
 
+  // Responsividade de colunas
   const numColumns = width < 500 ? 2 : width < 768 ? 3 : width < 1024 ? 4 : 6;
 
   const cardRaces = [
@@ -43,7 +44,7 @@ export default function HomeScreen({ navigation }) {
     'Quick-Play', 'Field', 'Ritual', 'Counter',
   ];
 
-  // Previne a saída involuntária pelo botão Voltar
+  // Previne a saída pelo botão Voltar
   useEffect(() => {
     const backAction = () => true;
     const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
@@ -75,20 +76,19 @@ export default function HomeScreen({ navigation }) {
   const fetchCards = async () => {
     try {
       setLoading(true);
-      // Tenta buscar diretamente a versão em português da API
-      let response = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php?language=pt');
-      let data = await response.json();
-
-      if (!data || !data.data) {
-        // Fallback caso a rota em português esteja instável
-        response = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php');
-        data = await response.json();
-      }
+      // Busca a base completa sem restrições de idioma para desbloquear todas as 14.500+ cartas
+      const response = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php');
+      const data = await response.json();
 
       if (data && data.data) {
+        // Remove apenas a entrada corrompida/dummy "???"
         const validCards = data.data.filter(
           (card) => card.name && card.name.trim() !== '???' && !card.name.includes('???')
         );
+
+        // Ordena o baralho inteiro de A a Z
+        validCards.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }));
+
         setCards(validCards);
         setFilteredCards(validCards);
       }
@@ -102,6 +102,7 @@ export default function HomeScreen({ navigation }) {
   const applyFilters = (query, race, attribute, level) => {
     let result = cards;
 
+    // 1. Pesquisa por Nome ou ID
     if (query.trim() !== '') {
       result = result.filter(
         (card) =>
@@ -110,14 +111,17 @@ export default function HomeScreen({ navigation }) {
       );
     }
 
+    // 2. Filtro por Raça
     if (race !== 'all') {
       result = result.filter((card) => card.race?.toLowerCase() === race.toLowerCase());
     }
 
+    // 3. Filtro por Atributo
     if (attribute !== 'all') {
       result = result.filter((card) => card.attribute?.toUpperCase() === attribute.toUpperCase());
     }
 
+    // 4. Filtro por Nível / Estrelas
     if (level !== 'all') {
       result = result.filter((card) => card.level === parseInt(level) || card.rank === parseInt(level));
     }
@@ -201,11 +205,11 @@ export default function HomeScreen({ navigation }) {
           Exibindo {filteredCards.length} de {cards.length} cartas liberadas
         </Text>
 
-        {/* Lista de Cartas */}
+        {/* Lista de Cartas em Ordem Alfabética */}
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#f59e0b" />
-            <Text style={styles.loadingText}>A carregar baralho...</Text>
+            <Text style={styles.loadingText}>A carregar baralho completo em ordem alfabética...</Text>
           </View>
         ) : (
           <FlatList
