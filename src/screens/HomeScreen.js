@@ -11,6 +11,8 @@ import {
   SafeAreaView,
   Modal,
   ScrollView,
+  BackHandler,
+  Platform,
 } from 'react-native';
 import CardItem from '../components/CardItem';
 
@@ -21,17 +23,16 @@ export default function HomeScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Estados dos Filtros Mantidos
+  // Estados dos Filtros
   const [selectedRace, setSelectedRace] = useState('all');
   const [selectedAttribute, setSelectedAttribute] = useState('all');
   const [selectedLevel, setSelectedLevel] = useState('all');
 
-  // Modais dos Filtros
+  // Modais
   const [modalRaceVisible, setModalRaceVisible] = useState(false);
   const [modalAttrVisible, setModalAttrVisible] = useState(false);
   const [modalLevelVisible, setModalLevelVisible] = useState(false);
 
-  // Responsividade da grade de cartas
   const numColumns = width < 500 ? 2 : width < 768 ? 3 : width < 1024 ? 4 : 6;
 
   const cardRaces = [
@@ -41,6 +42,27 @@ export default function HomeScreen({ navigation }) {
     'Psychic', 'Wyrm', 'Divine-Beast', 'Normal', 'Continuous', 'Equip',
     'Quick-Play', 'Field', 'Ritual', 'Counter',
   ];
+
+  // Previne a saída involuntária pelo botão Voltar
+  useEffect(() => {
+    const backAction = () => true;
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+    if (Platform.OS === 'web') {
+      window.history.pushState(null, '', window.location.href);
+      const handlePopState = () => {
+        window.history.pushState(null, '', window.location.href);
+      };
+      window.addEventListener('popstate', handlePopState);
+
+      return () => {
+        backHandler.remove();
+        window.removeEventListener('popstate', handlePopState);
+      };
+    }
+
+    return () => backHandler.remove();
+  }, []);
 
   useEffect(() => {
     fetchCards();
@@ -53,11 +75,22 @@ export default function HomeScreen({ navigation }) {
   const fetchCards = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php');
-      const data = await response.json();
+      // Tenta buscar diretamente a versão em português da API
+      let response = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php?language=pt');
+      let data = await response.json();
+
+      if (!data || !data.data) {
+        // Fallback caso a rota em português esteja instável
+        response = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php');
+        data = await response.json();
+      }
+
       if (data && data.data) {
-        setCards(data.data);
-        setFilteredCards(data.data);
+        const validCards = data.data.filter(
+          (card) => card.name && card.name.trim() !== '???' && !card.name.includes('???')
+        );
+        setCards(validCards);
+        setFilteredCards(validCards);
       }
     } catch (error) {
       console.error('Erro ao carregar cartas:', error);
@@ -69,7 +102,6 @@ export default function HomeScreen({ navigation }) {
   const applyFilters = (query, race, attribute, level) => {
     let result = cards;
 
-    // 1. Pesquisa por Nome ou ID
     if (query.trim() !== '') {
       result = result.filter(
         (card) =>
@@ -78,17 +110,14 @@ export default function HomeScreen({ navigation }) {
       );
     }
 
-    // 2. Filtro por Raça / Subtipo
     if (race !== 'all') {
       result = result.filter((card) => card.race?.toLowerCase() === race.toLowerCase());
     }
 
-    // 3. Filtro por Atributo
     if (attribute !== 'all') {
       result = result.filter((card) => card.attribute?.toUpperCase() === attribute.toUpperCase());
     }
 
-    // 4. Filtro por Estrelas / Nível
     if (level !== 'all') {
       result = result.filter((card) => card.level === parseInt(level) || card.rank === parseInt(level));
     }
@@ -125,7 +154,7 @@ export default function HomeScreen({ navigation }) {
           />
         </View>
 
-        {/* Barra de Filtros (Sem o filtro de Tipos) */}
+        {/* Barra de Filtros */}
         <View style={styles.filterWrapper}>
           <ScrollView
             horizontal
@@ -161,7 +190,7 @@ export default function HomeScreen({ navigation }) {
           </ScrollView>
         </View>
 
-        {/* Botão para Limpar Filtros */}
+        {/* Limpar Filtros */}
         {isFilterActive && (
           <TouchableOpacity style={styles.resetButton} onPress={resetFilters}>
             <Text style={styles.resetButtonText}>Limpar Filtros ✕</Text>
@@ -172,7 +201,7 @@ export default function HomeScreen({ navigation }) {
           Exibindo {filteredCards.length} de {cards.length} cartas liberadas
         </Text>
 
-        {/* Lista Principal de Cartas */}
+        {/* Lista de Cartas */}
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#f59e0b" />
